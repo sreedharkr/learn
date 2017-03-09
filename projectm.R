@@ -23,7 +23,7 @@ print(results.wis)
 results.wis <- as.factor(results.wis)
 misClasificError <- mean(results.wis != bcancer3_test_results)
 print(paste('Accuracy',1-misClasificError))
-# library(ROCR)
+  library(ROCR)
 # library(gplots)
 # m1.scores <- prediction(results.wis, bcancer3$V11)
 # plot(performance(m1.scores, "tpr", "fpr"), col = "red")
@@ -191,4 +191,14 @@ fimportance <- function() {
   print(importance)
   # plot importance
   plot(importance)
+}
+
+dtree2 <- function() {
+  library("rpart")
+  library("rpart.plot")
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer3 <- bcancer[c(-1)]
+  tree2 <- rpart(diagnosis ~ ., data = bcancer3, method = "class")
+  summary(tree2)
+  rpart.plot(tree2)
 }

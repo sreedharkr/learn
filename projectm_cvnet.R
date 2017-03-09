@@ -1,4 +1,4 @@
-# glm, glm+pca, rpart, fcorr, varimp
+# projectm_cvnet.R glm, glm+pca, rpart, fcorr, varimp
 # 30 attributes
 proj_glm <- function(){
 library(glmnet)
@@ -65,7 +65,7 @@ proj_cvglm <- function(){
   
 }
 #PCA 
-proj2 <- function(){
+pca1 <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   bcancer3 <- bcancer[c(-1,-2)]
   #train data
@@ -77,17 +77,18 @@ proj2 <- function(){
   source('exploratory.R')
   #apply pca
   pca.bcancer <- prcomp(bcancer3_data,center = TRUE,scale. = TRUE)
+  #dataframe for training data
   train.data <- data.frame(diagnosis=bcancer3_data_results, pca.bcancer$x)
   train.data2 <- train.data[1:7]
-  glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=train.data2,maxit=100)
-  summary(glm.wis3)
+  glm.model <- glm(diagnosis ~ .,family=binomial(link="logit"),data=train.data2,maxit=100)
+  #print (summary(glm.model))
   test.data <- predict(pca.bcancer, newdata = bcancer3_test)
   test.data <- as.data.frame(test.data)
   test.data2 <- test.data[1:7]
   
-  results.wis <- predict(glm.wis3,test.data2)
+  results.wis <- predict(glm.model,test.data2)
   results.wis <- ifelse(results.wis >= 0.5,'M','B')
-  print(results.wis)
+  #print(results.wis)
   results.wis <- as.factor(results.wis)
   misClasificError <- mean(results.wis != bcancer3_test_results)
   print(paste('Accuracy',1-misClasificError))
@@ -227,4 +228,31 @@ fimportance <- function() {
   print(importance)
   # plot importance
   plot(importance)
+}
+
+roc_curve <- function(){
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer3 <- bcancer[c(-1)]
+  bcancer3_data <- bcancer3[1:500,] 
+  bcancer3_test <- bcancer3[501:569,2:31]
+  bcancer3_test_results <- bcancer[501:569,2]
+  source('exploratory.R')
+  glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
+  summary(glm.wis3)
+  results.wis <- predict.glm(glm.wis3,bcancer3_test,type = "response")
+  results.wis <- ifelse(results.wis >= 0.5,'M','B')
+  #print(results.wis)
+  results.wis <- as.factor(results.wis)
+  misClasificError <- mean(results.wis != bcancer3_test_results)
+  print(paste('Accuracy',1-misClasificError))
+  library(ROCR)
+  # library(gplots)
+  results.pred <- predict.glm(glm.wis3,bcancer3_test,type = "response")
+  pred <- prediction(results.pred, bcancer3_test_results)
+  # plot(performance(m1.scores, "tpr", "fpr"), col = "red")
+  perfspec <- performance(prediction.obj = pred, measure="spec", x.measure="cutoff")
+  plot(perfspec)
+  par(new=TRUE)
+  perfsens <- performance(prediction.obj = pred, measure="sens", x.measure="cutoff")
+  plot(perfsens)
 }
