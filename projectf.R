@@ -1,7 +1,6 @@
-
-dim(dataset)
-head(dataset)
-DataProfiling <- function() {
+library(mlbench)
+library(caret)
+DataProfiling <- function(df = null) {
   # performs the basic profiling of the data
   #
   #Args:
@@ -20,13 +19,29 @@ DataProfiling <- function() {
   test.data <- test.data[c(-1)]
   glm.model <- glm (diagnosis ~ ., family = binomial(link = "logit"), data = train.data, maxit = 100)
   # displays the p-values
-  print( summary(glm.model)$coefficients[,4])
-  print ( summary(glm.wis3)$coefficients[,4] < 0.05 )
+  #print( summary(glm.model)$coefficients[,4])
+  #print ( summary(glm.wis3)$coefficients[,4] < 0.05 )
+  data.coeff <- summary(glm.model)$coefficients[,4]
+  data.pval.logical <- (data.coeff < 0.05 )
+  count.pval <- length (data.pval.logical[data.pval.logical == FALSE])
+  print(paste(c("count of pcal",count.pval)))
+  if(count.pval > 0) {
+    print("Some variables are statistically insignificant")
+    print( names(train.data)[data.pval.logical == FALSE][c(-n)] )
+  }
+  
   #invisible(readline(prompt="Press [enter] to continue"))
   cat ("Press [Y] for summary or N for no summary")
   input <- readline()
   if ( identical(input, "Y") ) {
     print (summary(glm.model) )
+  }
+  cat ("Press [Y] for correlation matrix")
+  input <- readline()
+  if ( identical(input, "Y") ) {
+    cmatrix <- cor(train.data[c(-n)]) 
+    correlated <- findCorrelation(cmatrix, cutoff=0.7)
+    print( paste( cat("these variables have corelation > 0.7 ::::",correlated)  ) )
   }
   invisible(readline(prompt="Press [enter] to see number of rows and columns"))
   no.rows <- nrow(dataset)
@@ -40,9 +55,12 @@ DataProfiling <- function() {
   predicted.results <- as.factor(predicted.results)
   #print(predicted.results)
   #print(test.data.class)
+  
   misClasificError <- mean(predicted.results != test.data.class)
   print(paste('Accuracy', 1 - misClasificError))
 }
+n = 1;
+dataset <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
 DataProfiling()
 #PCA 
 proj2 <- function(){
