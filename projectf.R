@@ -54,7 +54,7 @@ DataProfiling <- function(df = null) {
   predicted.results <- ifelse (predicted.results >= 0.5, 'M', 'B')
   predicted.results <- as.factor(predicted.results)
   #print(predicted.results)
-  #print(test.data.class)
+  #print(test.data.class) #
   
   misClasificError <- mean(predicted.results != test.data.class)
   print(paste('Accuracy', 1 - misClasificError))
