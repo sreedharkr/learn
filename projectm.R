@@ -8,18 +8,14 @@ bcancer3 <- bcancer[c(-1)]
 bcancer3_data <- bcancer3[1:500,] 
 bcancer3_test <- bcancer3[501:569,2:31]
 bcancer3_test_results <- bcancer[501:569,2]
-source('exploratory.R')
 # fcorr(bcancer3)
 #sapply(bcancer3, typeof)
-#str(bcancer3)
-# glm.wis3 <- glm(V11 ~ V2 + V3 + V4 + V5 + V6 + V8 + V9 + V10,family=binomial(link="logit"),data=bcancer3)
-# Warning: glm.fit: fitted probabilities numerically 0 or 1 
-# occurred means that the data is possibly linearely separable
 glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
-summary(glm.wis3)
+print ( summary(glm.wis3) )
+print(cor.test(bcancer3_data)  )
 results.wis <- predict.glm(glm.wis3,bcancer3_test,type = "response")
 results.wis <- ifelse(results.wis >= 0.5,'M','B')
-print(results.wis)
+#print(results.wis)
 results.wis <- as.factor(results.wis)
 misClasificError <- mean(results.wis != bcancer3_test_results)
 print(paste('Accuracy',1-misClasificError))

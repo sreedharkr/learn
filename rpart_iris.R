@@ -22,6 +22,19 @@ dtree3 <- function() {
   summary(tree)
   rpart.plot(tree)
 }
+# incomplete
+rf_cancer <- function() {
+  library("rpart")
+  library("rpart.plot")
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer3 <- bcancer[c(-1)]
+  indices <- sample(2,nrow(bcancer3),replace = T,prob = c(70,30))
+  train.data <-
+  #tree <- rpart(diagnosis ~ ., data = bcancer3, method = "class")
+  tree <- randomForest(Species~.,data=trainData,ntree=100,proximity=TRUE)
+  summary(tree)
+  rpart.plot(tree)
+}
 rforest <- function(){
   ind <- sample(2,nrow(iris),replace=TRUE,prob=c(0.7,0.3))
   trainData <- iris[ind==1,]

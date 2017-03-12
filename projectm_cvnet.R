@@ -15,7 +15,7 @@ bcancer3_data2_results <- bcancer3_data[,1]
 bcancer3_test <- bcancer3[501:569,2:31]
 bcancer3_test_results <- bcancer3[501:569,1]
 source('exploratory.R')
-
+# alpha=1 lasso
 #glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
 glm.wis3 <- glmnet(x= as.matrix(bcancer3_data2),y=as.matrix(bcancer3_data2_results),family="binomial",alpha=0)
 print(names(glm.wis3))
@@ -216,17 +216,13 @@ fimportance <- function() {
   library(mlbench)
   library(caret)
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   # prepare training scheme
   control <- trainControl(method="repeatedcv", number=10, repeats=3)
-  # train the model
   model <- train(diagnosis ~., data=bcancer, method="lvq", preProcess="scale", trControl=control)
   #model <- train(diabetes~., data=PimaIndiansDiabetes, method="lm", preProcess="scale", trControl=control)
   # estimate variable importance
   importance <- varImp(model, scale=FALSE)
-  # summarize importance
   print(importance)
-  # plot importance
   plot(importance)
 }
 
@@ -236,7 +232,6 @@ roc_curve <- function(){
   bcancer3_data <- bcancer3[1:500,] 
   bcancer3_test <- bcancer3[501:569,2:31]
   bcancer3_test_results <- bcancer[501:569,2]
-  source('exploratory.R')
   glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
   summary(glm.wis3)
   results.wis <- predict.glm(glm.wis3,bcancer3_test,type = "response")
@@ -255,4 +250,29 @@ roc_curve <- function(){
   par(new=TRUE)
   perfsens <- performance(prediction.obj = pred, measure="sens", x.measure="cutoff")
   plot(perfsens)
+}
+k_means <- function(){
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  c2 <- c("perimeter_worst","radius_worst","area_worst","concave.points_worst",
+          "concave.points_mean","perimeter_mean")
+ # summary(bcancer[,c2])
+  bcancer3 <- bcancer[c(-1,-2)][c2]
+  bcancer3 <- scale(bcancer3, scale = T, center = T)
+  #bcancer3 <- bcancer[c(-1,-2)]
+  cancer.cluster <- kmeans(bcancer3, 2, nstart = 1,iter.max = 150)
+  #print(cancer.cluster)
+  print( table(cancer.cluster$cluster)["2"] )
+  print ( table(cancer.cluster$cluster)["1"] )
+  cancer.cluster$cluster <- as.factor(cancer.cluster$cluster)
+  results.wis <- ifelse(cancer.cluster$cluster == 2,'M','B')
+  print( table(results.wis)["M"] )
+  print ( table(results.wis)["B"] )
+  print( table(results.wis, bcancer$diagnosis) )
+  misClasificError <- mean(results.wis != bcancer$diagnosis)
+  print(paste('Accuracy',1-misClasificError))
+  #ggplot(bcancer3, aes(perimeter_worst, radius_worst, color = cancer.cluster$diagnosis)) + geom_point()
+}
+unregister <- function() {
+  env <- foreach:::.foreachGlobals
+  rm(list=ls(name=env), pos=env)
 }

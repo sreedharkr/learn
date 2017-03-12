@@ -8,8 +8,12 @@ library(class)
 
 
 ga2 <- function() {
-GA <- ga(type = "binary", fitness = proj_glm, nBits = 30, popSize = 50,maxiter = 30,parallel = T,keepBest = T)
-summary(GA)
+GA <- ga(type = "binary", fitness = proj_glm, nBits = 30, popSize = 50,maxiter = 20,parallel = T,
+         keepBest = T, monitor = monitor.ga)
+plot(GA)
+# print(summary(GA))
+print(summary(GA))
+print(summary(GA)$bestSol)
 cat("accuracy \n ",accuracy)
 print("\n")
 c2 <- solution * c1
@@ -18,7 +22,7 @@ indices2 <- x * c1
 #cat("solution variables::::: \n ",indices2)
 #print(indices2)
 #knn_cancer(solution)
-glm.verify(solution)
+# glm.verify(solution)
 }
 
 f <- function(x) {
@@ -116,4 +120,14 @@ glm.verify <- function(x){
   results.wis <- as.factor(results.wis)
   mn <- mean(results.wis == bcancer3_test_results)
   print(paste('Accuracy',mn))
+}
+
+monitor.ga <- function(obj) 
+{ 
+  # curve(f, -10, 10, main = paste("iteration =", obj@iter))
+  # points(obj@population, obj@fitness, pch = 20, col = 2)
+  # rug(obj@population, col = 2)
+  # Sys.sleep(0.2)
+  #print(obj$fitnessValue)
+  print(obj@solution)
 }

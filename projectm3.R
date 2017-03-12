@@ -8,17 +8,28 @@ bcancer3_data <- bcancer3[1:500,]
 bcancer3_test <- bcancer3[501:569,2:31]
 bcancer3_test_results <- bcancer[501:569,2]
 source('exploratory.R')
-# Warning: glm.fit: fitted probabilities numerically 0 or 1 
-# occurred means that the data is possibly linearely separable
 #glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
-#glm.wis3 <- glm(diagnosis ~ .,family=binomial,data=bcancer3_data,maxit=100)
+glm.wis3 <- glm(diagnosis ~ .,family=binomial,data=bcancer3_data,maxit=100)
 #glm.wis3 <- glm(diagnosis ~ radius_mean + texture_mean + radius_mean*texture_mean, family=binomial,data=bcancer3_data,maxit=100)
-glm.wis3 <- glm(diagnosis ~ radius_mean*texture_mean, family=binomial,data=bcancer3_data,maxit=100)
-library(interplot)
-interplot(m = glm.wis3, "radius_mean","texture_mean")
+#glm.wis3 <- glm(diagnosis ~ radius_mean*texture_mean, family=binomial,data=bcancer3_data,maxit=100)
+#library(interplot)
+#interplot(m = glm.wis3, "radius_mean","texture_mean")
 print(summary(glm.wis3))
-summary(glm.wis3)$coefficients[,4]
-summary(glm.wis3)$coefficients[,4] < 0.05
+print( summary(glm.wis3)$coefficients[,4])
+print ( summary(glm.wis3)$coefficients[,4] < 0.05 )
+}
+learn_pvalue2 <- function(){
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer3 <- bcancer[c(-1)]
+  indices <- sample(2, nrow(dataset), replace=TRUE, prob = c(0.7,0.3) )
+  train.data <- dataset[indices == 1,]
+  test.data <- dataset[indices == 2,]
+  test.data.class <- test.data[, n]
+  test.data <- test.data[c(-1)]
+  glm.wis3 <- glm(diagnosis ~ .,family=binomial,data=train.data,maxit=100)
+  print(summary(glm.wis3))
+  print( summary(glm.wis3)$coefficients[,4])
+  print ( summary(glm.wis3)$coefficients[,4] < 0.05 )
 }
 
 pca_pvalue <- function(){
@@ -37,7 +48,7 @@ pca_pvalue <- function(){
   train.data2 <- train.data[1:6]
   glm.wis3 <- glm(diagnosis ~ .,family=binomial,data=train.data2,maxit=100)
   # glm.wis3 <- glm(diagnosis ~ train.data2$PC1 * train.data2$PC2,family=binomial,data=train.data2,maxit=100
-  # summary(glm.wis3)$coefficients[,4] < 0.05
+  summary(glm.wis3)$coefficients[,4] < 0.05
   #summary(glm.wis3)
   cf <- summary(glm.wis3)$coefficients
   cf2 <- cf[,4]
