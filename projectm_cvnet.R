@@ -1,6 +1,81 @@
 # projectm_cvnet.R glm, glm+pca, rpart, fcorr, varimp
-# load the libraries
+
 library(glmnet)
+# 70:30 split and cv
+#radius_se  4.0912751, radius_worst  0.5657320, texture_worst   0.1211370, smoothness_worst  14.7915504,
+# concavity_worst   0.8301832, concave.points_worst   19.5613866, symmetry_worst            4.5592741
+proj_cvglm2 <- function(){
+  library(glmnet)
+  df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  df <- df[ c(-1) ]
+  set.seed(222)
+  indices <- sample( 2, nrow(df), replace = T, prob = c(0.7, 0.3)  )
+  df.train <- df[ indices == 1, ]  
+  df.train1 <- df.train[, 2:31]
+  df.train.results <- df.train[,1]
+  
+  df.test <- df[  indices == 2, ]
+  df.test1 <- df.test[, 2:31 ]
+  df.test.results <- df.test[,1]
+  print( paste( c("number of rows in df.train"), nrow(df.train1) )  )
+  print( paste( c("number of rows in df.test"), nrow(df.test1) )  )
+  
+  # apply regularization and cv
+  cvglm <- cv.glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results), family = "binomial",alpha = 1)
+  print(names(cvglm))
+  #print( summary(cvglm) )
+  plot(cvglm)
+  #print(coef(glm.wis3)[, 30])
+  print(coef(cvglm))
+  #0.01 accuracy 1
+  results.wis <- predict(object = cvglm, s = 0.01, as.matrix(df.test1),type = "response")
+  results.wis <- ifelse(results.wis >= 0.5,'M','B')
+  #print(results.wis)
+  results.wis <- as.factor(results.wis)
+  misClasificError <- mean(results.wis != df.test.results)
+  print(paste('Accuracy', 1 - misClasificError))
+  
+}
+
+#PCA 
+pca.classify <- function(){
+  df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  df <- df[c(-1)]
+  set.seed(222)
+  indices <- sample(2, nrow(df), replace = T, prob = c(70, 30))
+  #train data
+  df.train <- df[indices == 1,] 
+  df.test <- df[indices == 2,]
+  df.train1 <- df.train[,2:31]
+  df.train.results <- df.train[,1]
+  df.test1 <- df.test[,2:31]
+  df.test.results <- df.test[,1]
+  
+  #apply pca
+  pca.df <- prcomp(df.train1, center = T, scale = T)
+  pca.df.train <- pca.df$x[,1:6]
+  #dataframe for training data
+  pca.df1 <- data.frame(diagnosis = df.train.results, pca.df$x)
+  #train.data <- data.frame(diagnosis=bcancer3_data_results, pca.bcancer$x)
+  # train.data2 <- train.data[1:7]
+  train.data2 <- pca.df1[1:7]
+  # glm.model <- glm(diagnosis ~ .,family = binomial(link="logit"), data = train.data2, maxit = 100)
+  glm.model <- cv.glmnet(x = as.matrix(pca.df.train), y = as.matrix(df.train.results),family = "binomial",alpha = 1)
+  print (summary(glm.model))
+  print(coef(glm.model))
+  #preparing the test data
+  test.data <- predict(pca.df, newdata = df.test1)
+  test.data <- as.data.frame(test.data)
+  test.data2 <- test.data[1:6]
+  
+  # results.wis <- predict(glm.model,test.data2)
+  results.wis <- predict(object = glm.model, s = 0.01, as.matrix(test.data2),type = "response")
+  results.wis <- ifelse(results.wis >= 0.5,'M','B')
+  #print(results.wis)
+  results.wis <- as.factor(results.wis)
+  misClasificError <- mean(results.wis != df.test.results)
+  print(paste('Accuracy',1-misClasificError))
+}
 
 proj_glm <- function(){
   
@@ -70,39 +145,7 @@ proj_cvglm <- function(){
   print(paste('Accuracy', 1 - misClasificError))
   
 }
-proj_cvglm2 <- function(){
-  library(glmnet)
-  df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-  df <- df[ c(-1) ]
-  set.seed(222)
 
-  indices <- sample( 2, nrow(df), replace = T, prob = c(0.7, 0.3)  )
-  df.train <- df[ indices == 1, ]  
-  df.train1 <- df.train[, 2:31]
-  df.train.results <- df.train[,1]
-  
-  df.test <- df[  indices == 2, ]
-  df.test1 <- df.test[, 2:31 ]
-  df.test.results <- df.test[,1]
-  print( paste( c("number of rows in df.train"), nrow(df.train1) )  )
-  print( paste( c("number of rows in df.test"), nrow(df.test1) )  )
-  
-  # apply regularization and cv
-  cvglm <- cv.glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results),family = "binomial",alpha = 1)
-  print(names(cvglm))
-  #print( summary(cvglm) )
-  plot(cvglm)
-  #print(coef(glm.wis3)[, 30])
-  print(coef(cvglm))
-  #0.01 accuracy 1
-  results.wis <- predict(object = cvglm, s = 0.01, as.matrix(df.test1),type = "response")
-  results.wis <- ifelse(results.wis >= 0.5,'M','B')
-  #print(results.wis)
-  results.wis <- as.factor(results.wis)
-  misClasificError <- mean(results.wis != df.test.results)
-  print(paste('Accuracy', 1 - misClasificError))
-  
-}
 #PCA 
 pca1 <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
@@ -133,7 +176,7 @@ pca1 <- function(){
   print(paste('Accuracy',1-misClasificError))
 }
 #decision tree
-proj3 <- function(){
+pca.tree <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   bcancer3 <- bcancer[c(-1,-2)]
   #train data
@@ -175,35 +218,6 @@ proj3 <- function(){
   recall <- result$byClass['Sensitivity']
   print(precision)
   print(recall)
-}
-basicdata <- function() {
-  bcancer <- read.table("datasets/breast-cancer-wisconsin.txt",sep = ",")
-  # colnames(bcancer) <- c("Sample code number","Clump Thickness","Uniformity of Cell Size","Uniformity of Cell Shape","Marginal Adhesion","Single Epithelial Cell Size","Bare Nuclei","Bland Chromatin","Normal Nucleoli","Mitoses","Class")
-  colnames(bcancer) <- c("code","Thickness","Cell Size","Cell Shape","Marginal Adhesion","SE Cell Size","Bare Nuclei","Bland Chromatin","Normal Nucleoli","Mitoses","Class")
-  #print(paste0("number of rows: ", bcancer))
-  cat("number of rows",nrow(bcancer),"\n")
-  sum(bcancer$Class)
-  str(bcancer)
-  # breaks = seq(1.5, 5.5, by=0.5)
-  # t1 <- cut(bcancer$Thickness,breaks,right = FALSE)
-  # table(t1)
-  print ( cor(bcancer[c(-1,-7,-11) ]) )
-  bcancer2 <- bcancer[c(-1,-7,-11) ]
-  pairs(bcancer2)
-  d <- density(bcancer2$Thickness)
-  #ggplot(bcancer) + geom_density(aes(x='Cell Size')) + scale_x_continuous(labels='Cell Size')
-  plot(d)
-  for(i in names(bcancer)){
-    #mcol <- cat("bcancer",i,sep = "$")
-    #print(class(mcol))
-    #print(bcancer[i])
-    #print( is.numeric(bcancer[[i]]) )
-    #df[[paste(i, 'length', sep="_")]] <- str_length(df[[i]])
-    if( is.numeric(bcancer[[i]]) ) {
-    t1 <- cut(bcancer[[i]],breaks,right = FALSE)
-    #cat("distribution of column",i,t1)
-    }
-  }#for
 }
 
 tenfold <- function(){
@@ -310,6 +324,32 @@ k_means <- function(){
   misClasificError <- mean(results.wis != bcancer$diagnosis)
   print(paste('Accuracy',1-misClasificError))
   #ggplot(bcancer3, aes(perimeter_worst, radius_worst, color = cancer.cluster$diagnosis)) + geom_point()
+}
+# radius_worst concave.points_worst texture_worst
+dtree3 <- function() {
+  library("rpart")
+  library("rpart.plot")
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer3 <- bcancer[c(-1)]
+  bcancer.train <- scale(bcancer3[2:31], center = T, scale = T)
+  bcancer3.train <- data.frame(diagnosis = bcancer3[,1], bcancer.train)
+  # tree <- rpart(diagnosis ~ ., data = bcancer3, method = "class")
+  tree <- rpart(diagnosis ~ ., data = as.data.frame( bcancer3.train), method = "class")
+  #summary(tree)
+  rpart.plot(tree)
+}
+# incomplete
+rf_cancer <- function() {
+  library("rpart")
+  library("rpart.plot")
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer3 <- bcancer[c(-1)]
+  indices <- sample(2,nrow(bcancer3),replace = T,prob = c(70,30))
+  train.data <-
+    #tree <- rpart(diagnosis ~ ., data = bcancer3, method = "class")
+    tree <- randomForest(Species~.,data=trainData,ntree=100,proximity=TRUE)
+  summary(tree)
+  rpart.plot(tree)
 }
 unregister <- function() {
   env <- foreach:::.foreachGlobals
