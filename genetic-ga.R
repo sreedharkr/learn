@@ -8,10 +8,9 @@ library(class)
 
 
 ga2 <- function() {
-GA <- ga(type = "binary", fitness = proj_glm, nBits = 30, popSize = 50,maxiter = 20,parallel = T,
-         keepBest = T, monitor = monitor.ga)
+GA <- ga(type = "binary", fitness = f, nBits = 30, popSize = 50,maxiter = 20,parallel = F,
+         keepBest = F)
 plot(GA)
-# print(summary(GA))
 print(summary(GA))
 print(summary(GA)$bestSol)
 cat("accuracy \n ",accuracy)
@@ -67,7 +66,7 @@ proj_glm <- function(x){
   bcancer3_data2 <- bcancer3[1:500,]
   print(dim(bcancer3_data2))
   bcancer3_test <- bcancer3[501:569,]
-  print(dim(bcancer3_test))
+  #print(dim(bcancer3_test))
   # alpha=1 lasso
   glm.wis3 <- glmnet(x= as.matrix(bcancer3_data2),y=as.matrix(bcancer3_data2_results),family="binomial",alpha=1)
   #0.01 accuracy 1
@@ -130,4 +129,9 @@ monitor.ga <- function(obj)
   # Sys.sleep(0.2)
   #print(obj$fitnessValue)
   print(obj@solution)
+}
+
+unregister <- function() {
+  env <- foreach:::.foreachGlobals
+  rm(list=ls(name=env), pos=env)
 }

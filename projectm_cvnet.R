@@ -1,35 +1,42 @@
 # projectm_cvnet.R glm, glm+pca, rpart, fcorr, varimp
-# 30 attributes
-proj_glm <- function(){
+# load the libraries
 library(glmnet)
-bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-set.seed(222)
-indexes <- sample(1:nrow(bcancer),size = nrow(bcancer)) #random shuffle
-bcancer3 <- bcancer[indexes,]
-bcancer3 <- bcancer3[c(-1)] #remove serial number
-bcancer3_data <- bcancer3[1:500,] #
 
-bcancer3_data2 <- bcancer3_data[,2:31]
-bcancer3_data2_results <- bcancer3_data[,1]
-
-bcancer3_test <- bcancer3[501:569,2:31]
-bcancer3_test_results <- bcancer3[501:569,1]
-source('exploratory.R')
-# alpha=1 lasso
-#glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
-glm.wis3 <- glmnet(x= as.matrix(bcancer3_data2),y=as.matrix(bcancer3_data2_results),family="binomial",alpha=0)
-print(names(glm.wis3))
-plot(glm.wis3)
-print(coef(glm.wis3))
-#print(coef(glm.wis3)[, 10])
-#0.01 accuracy 1
- results.wis <- predict(object=glm.wis3,s= 0.01,as.matrix(bcancer3_test),type = "response")
-#print(results.wis)
- results.wis <- ifelse(results.wis >= 0.5,'M','B')
-#print(results.wis)
- results.wis <- as.factor(results.wis)
- misClasificError <- mean(results.wis != bcancer3_test_results)
- print(paste('Accuracy',1-misClasificError))
+proj_glm <- function(){
+  
+  #load the dataset
+  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  set.seed(222)
+  indexes <- sample(1:nrow(bcancer),size = nrow(bcancer)) #random shuffle
+  bcancer3 <- bcancer[indexes,]
+  bcancer3 <- bcancer3[c(-1)] #remove serial number
+  #training data
+  bcancer3_data <- bcancer3[1:500,] 
+  # training data without predicted variable
+  bcancer3_data2 <- bcancer3_data[,2:31]
+  # training data predicted variable
+  bcancer3_data2_results <- bcancer3_data[,1]
+  # test data
+  bcancer3_test <- bcancer3[501:569,2:31]
+  bcancer3_test_results <- bcancer3[501:569,1]
+  
+  # variable selection using lasso
+  # alpha=1 lasso
+  #glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
+  glm.wis3 <- glmnet(x = as.matrix(bcancer3_data2),y = as.matrix(bcancer3_data2_results),family = "binomial",alpha = 1)
+  print(names(glm.wis3))
+  print( summary(glm.wis3) )
+  #plot(glm.wis3)
+  print(coef(glm.wis3))
+  #print(coef(glm.wis3)[, 10])
+  #0.01 accuracy 1
+  results.wis <- predict(object=glm.wis3,s= 0.01,as.matrix(bcancer3_test),type = "response")
+  #print(results.wis)
+  results.wis <- ifelse(results.wis >= 0.5,'M','B')
+  #print(results.wis)
+  results.wis <- as.factor(results.wis)
+  misClasificError <- mean(results.wis != bcancer3_test_results)
+  print(paste('Accuracy',1-misClasificError))
 
 }
 proj_cvglm <- function(){
@@ -46,22 +53,54 @@ proj_cvglm <- function(){
   
   bcancer3_test <- bcancer3[501:569,2:31]
   bcancer3_test_results <- bcancer3[501:569,1]
-  source('exploratory.R')
   
   #glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
-  cvglm <- cv.glmnet(x= as.matrix(bcancer3_data2),y=as.matrix(bcancer3_data2_results),family="binomial",alpha=1)
+  cvglm <- cv.glmnet(x = as.matrix(bcancer3_data2), y = as.matrix(bcancer3_data2_results),family = "binomial",alpha = 1)
   print(names(cvglm))
+  #print( summary(cvglm) )
   plot(cvglm)
   #print(coef(glm.wis3)[, 30])
-  #print(coef(glm.wis3)[, 10])
+  print(coef(cvglm))
   #0.01 accuracy 1
-  results.wis <- predict(object=cvglm,s= 0.01,as.matrix(bcancer3_test),type = "response")
-  #print(results.wis)
+  results.wis <- predict(object = cvglm, s = 0.01, as.matrix(bcancer3_test),type = "response")
   results.wis <- ifelse(results.wis >= 0.5,'M','B')
   #print(results.wis)
   results.wis <- as.factor(results.wis)
   misClasificError <- mean(results.wis != bcancer3_test_results)
-  print(paste('Accuracy',1-misClasificError))
+  print(paste('Accuracy', 1 - misClasificError))
+  
+}
+proj_cvglm2 <- function(){
+  library(glmnet)
+  df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  df <- df[ c(-1) ]
+  set.seed(222)
+
+  indices <- sample( 2, nrow(df), replace = T, prob = c(0.7, 0.3)  )
+  df.train <- df[ indices == 1, ]  
+  df.train1 <- df.train[, 2:31]
+  df.train.results <- df.train[,1]
+  
+  df.test <- df[  indices == 2, ]
+  df.test1 <- df.test[, 2:31 ]
+  df.test.results <- df.test[,1]
+  print( paste( c("number of rows in df.train"), nrow(df.train1) )  )
+  print( paste( c("number of rows in df.test"), nrow(df.test1) )  )
+  
+  # apply regularization and cv
+  cvglm <- cv.glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results),family = "binomial",alpha = 1)
+  print(names(cvglm))
+  #print( summary(cvglm) )
+  plot(cvglm)
+  #print(coef(glm.wis3)[, 30])
+  print(coef(cvglm))
+  #0.01 accuracy 1
+  results.wis <- predict(object = cvglm, s = 0.01, as.matrix(df.test1),type = "response")
+  results.wis <- ifelse(results.wis >= 0.5,'M','B')
+  #print(results.wis)
+  results.wis <- as.factor(results.wis)
+  misClasificError <- mean(results.wis != df.test.results)
+  print(paste('Accuracy', 1 - misClasificError))
   
 }
 #PCA 
