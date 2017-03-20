@@ -18,7 +18,7 @@ ga2 <- function() {
   #gaControl("binary" = list(selection = "gabin_rwSelection"))
   # GA <- ga(type = "binary", fitness = proj_glm, nBits = 30, popSize = 50,maxiter = 50,
   #        parallel = F, pcrossover = 0.8,pmutation = 0.1, selection = gabin_rwSelection )
-  GA <- ga(type = "binary", fitness = proj_glm, nBits = 30, popSize = 50, maxiter = 100,
+  GA <- ga(type = "binary", fitness = proj_glm, nBits = 30, popSize = 50, maxiter = 50,
            parallel = T, pcrossover = 0.9, pmutation = 0.25, elitism = 2,run = 40,
            selection = gabin_tourSelection)
   plot(GA)
