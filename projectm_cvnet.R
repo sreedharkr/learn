@@ -1,10 +1,11 @@
 # projectm_cvnet.R glm, glm+pca, rpart, fcorr, varimp
-
+source("utility.R")
 library(glmnet)
 # 70:30 split and cv
 #radius_se  4.0912751, radius_worst  0.5657320, texture_worst   0.1211370, smoothness_worst  14.7915504,
 # concavity_worst   0.8301832, concave.points_worst   19.5613866, symmetry_worst            4.5592741
-proj_cvglm2 <- function(){
+proj_fversion <- function(){
+  # regularization + cross-validation
   library(glmnet)
   df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   df <- df[ c(-1) ]
@@ -12,6 +13,8 @@ proj_cvglm2 <- function(){
   indices <- sample( 2, nrow(df), replace = T, prob = c(0.7, 0.3)  )
   df.train <- df[ indices == 1, ]  
   df.train1 <- df.train[, 2:31]
+  display.head(df.train1)
+  display.pairs(df.train1)
   df.train.results <- df.train[,1]
   
   df.test <- df[  indices == 2, ]
@@ -34,11 +37,11 @@ proj_cvglm2 <- function(){
   results.wis <- as.factor(results.wis)
   misClasificError <- mean(results.wis != df.test.results)
   print(paste('Accuracy', 1 - misClasificError))
-  
 }
 
 #PCA 
 pca.classify <- function(){
+  # pca + cv.glmnet
   df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   df <- df[c(-1)]
   set.seed(222)
@@ -78,7 +81,7 @@ pca.classify <- function(){
 }
 
 proj_glm <- function(){
-  
+  # glmnet only - no regularization
   #load the dataset
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   set.seed(222)
@@ -114,67 +117,9 @@ proj_glm <- function(){
   print(paste('Accuracy',1-misClasificError))
 
 }
-proj_cvglm <- function(){
-  library(glmnet)
-  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-  set.seed(222)
-  indexes <- sample(1:nrow(bcancer),size = nrow(bcancer)) #random shuffle
-  bcancer3 <- bcancer[indexes,]
-  bcancer3 <- bcancer3[c(-1)] #remove serial number
-  bcancer3_data <- bcancer3[1:500,] #
-  
-  bcancer3_data2 <- bcancer3_data[,2:31]
-  bcancer3_data2_results <- bcancer3_data[,1]
-  
-  bcancer3_test <- bcancer3[501:569,2:31]
-  bcancer3_test_results <- bcancer3[501:569,1]
-  
-  #glm.wis3 <- glm(diagnosis ~ .,family=binomial(link="logit"),data=bcancer3_data,maxit=100)
-  cvglm <- cv.glmnet(x = as.matrix(bcancer3_data2), y = as.matrix(bcancer3_data2_results),family = "binomial",alpha = 1)
-  print(names(cvglm))
-  #print( summary(cvglm) )
-  plot(cvglm)
-  #print(coef(glm.wis3)[, 30])
-  print(coef(cvglm))
-  #0.01 accuracy 1
-  results.wis <- predict(object = cvglm, s = 0.01, as.matrix(bcancer3_test),type = "response")
-  results.wis <- ifelse(results.wis >= 0.5,'M','B')
-  #print(results.wis)
-  results.wis <- as.factor(results.wis)
-  misClasificError <- mean(results.wis != bcancer3_test_results)
-  print(paste('Accuracy', 1 - misClasificError))
-  
-}
 
 #PCA 
-pca1 <- function(){
-  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-  bcancer3 <- bcancer[c(-1,-2)]
-  #train data
-  bcancer3_data <- bcancer3[1:500,] 
-  bcancer3_data_results <- bcancer[1:500,2]
-  #test data
-  bcancer3_test <- bcancer3[501:569,1:30]
-  bcancer3_test_results <- bcancer[501:569,2]
-  source('exploratory.R')
-  #apply pca
-  pca.bcancer <- prcomp(bcancer3_data,center = TRUE,scale. = TRUE)
-  #dataframe for training data
-  train.data <- data.frame(diagnosis=bcancer3_data_results, pca.bcancer$x)
-  train.data2 <- train.data[1:7]
-  glm.model <- glm(diagnosis ~ .,family=binomial(link="logit"),data=train.data2,maxit=100)
-  #print (summary(glm.model))
-  test.data <- predict(pca.bcancer, newdata = bcancer3_test)
-  test.data <- as.data.frame(test.data)
-  test.data2 <- test.data[1:7]
-  
-  results.wis <- predict(glm.model,test.data2)
-  results.wis <- ifelse(results.wis >= 0.5,'M','B')
-  #print(results.wis)
-  results.wis <- as.factor(results.wis)
-  misClasificError <- mean(results.wis != bcancer3_test_results)
-  print(paste('Accuracy',1-misClasificError))
-}
+
 #decision tree
 pca.tree <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
@@ -220,64 +165,6 @@ pca.tree <- function(){
   print(recall)
 }
 
-tenfold <- function(){
-  bcancer <- read.table("datasets/breast-cancer-wisconsin.txt",sep = ",")
-  #Randomly shuffle the data
-  bcancer<-bcancer[sample(nrow(bcancer)),]
-  yourData <- bcancer[1:100,]
-  
-  #Create 10 equally size folds
-  folds <- cut( seq(1,nrow(yourData)),breaks=10,labels=FALSE )
-  class(folds)
-  #Perform 10 fold cross validation
-  for(i in 1:1){
-    #Segement your data by fold using the which() function 
-    testIndexes <- which(folds==i,arr.ind=TRUE)
-    testData <- yourData[testIndexes, ]
-    print("testdata >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    print(testData)
-    
-    trainData <- yourData[-testIndexes, ]
-    print("traindata >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    print(trainData)
-    #Use the test and train data partitions however you desire...
-  }
-}#tenfold
-
-fselect <- function() {
-  # ensure the results are repeatable
-  set.seed(7)
-  # load the library
-  library(mlbench)
-  library(caret)
-  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-  bcancer3 <- bcancer[c(-1,-2)]
-  # calculate correlation matrix
-  cmatrix <- cor(bcancer3)
-  print("correlationMatrix::")
-  # find attributes that are highly corrected (ideally >0.75)
-  correlated <- findCorrelation(cmatrix, cutoff=0.7)
-  print(correlated)
-  # library(corrplot)
-  # corrplot(cmatrix,order = hclust)
-  highlyCorrelated <- findCorrelation(cmatrix, cutoff=0.7,verbose=TRUE,names=TRUE)
-  print(highlyCorrelated)
-}
-
-fimportance <- function() {
-  set.seed(7)
-  library(mlbench)
-  library(caret)
-  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-  # prepare training scheme
-  control <- trainControl(method="repeatedcv", number=10, repeats=3)
-  model <- train(diagnosis ~., data=bcancer, method="lvq", preProcess="scale", trControl=control)
-  #model <- train(diabetes~., data=PimaIndiansDiabetes, method="lm", preProcess="scale", trControl=control)
-  # estimate variable importance
-  importance <- varImp(model, scale=FALSE)
-  print(importance)
-  plot(importance)
-}
 
 roc_curve <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
@@ -342,14 +229,30 @@ dtree3 <- function() {
 rf_cancer <- function() {
   library("rpart")
   library("rpart.plot")
+  library(randomForest)
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   bcancer3 <- bcancer[c(-1)]
+  set.seed(299)
   indices <- sample(2,nrow(bcancer3),replace = T,prob = c(70,30))
-  train.data <-
-    #tree <- rpart(diagnosis ~ ., data = bcancer3, method = "class")
-    tree <- randomForest(Species~.,data=trainData,ntree=100,proximity=TRUE)
-  summary(tree)
-  rpart.plot(tree)
+  train.data <- bcancer3[indices == 1,]
+  test.data <- bcancer3[indices == 2,]
+  rf <- randomForest(diagnosis ~ ., data = train.data, ntree = 300, 
+                     mtry = 3, proximity=TRUE, cutoff = c(0.6,0.4) )
+  print(attributes(rf))
+  plot(rf)
+  #print (importance(rf)) 
+  predicted.train <- predict(rf, type="class")
+  train.actual <- train.data[,1]
+  bias.estimate <- mean(predicted.train != train.actual)
+  print(paste('training Accuracy',1 - bias.estimate))
+  print(  table(predicted.train, train.actual)   )
+  predicted.test = predict(rf,test.data[2:31], type="class")
+  test.actual <- test.data[,1]
+  misClasificError <- mean(predicted.test != test.actual)
+  print(paste('Test data Accuracy',1 - misClasificError))
+  print(  table(predicted.test, test.actual)   )
+  # print(rf)
+  plot(margin(rf, test.actual))
 }
 unregister <- function() {
   env <- foreach:::.foreachGlobals
