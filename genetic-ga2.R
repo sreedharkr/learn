@@ -151,7 +151,9 @@ highdata2 <- function(){
   dataset2 <- cbind(prs.data, prs.class)
   dim(dataset2)
 }
-
+# Matrix x is gene expression data and arrays were normalized, 
+# log transformed, and standardized to zero mean and 
+# unit variance across genes
 rf_cancer <- function() {
   library("spls")
   library("rpart")

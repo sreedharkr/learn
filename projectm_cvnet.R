@@ -14,7 +14,7 @@ proj_fversion <- function(){
   df.train <- df[ indices == 1, ]  
   df.train1 <- df.train[, 2:31]
   display.head(df.train1)
-  display.pairs(df.train1)
+  #display.pairs(df.train1)
   df.train.results <- df.train[,1]
   
   df.test <- df[  indices == 2, ]
