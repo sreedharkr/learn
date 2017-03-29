@@ -16,8 +16,8 @@ micro <- function() {
  # sampleNames(ALL)[1:5]
  tgt.cases <- which(ALL$BT %in% levels(ALL$BT)[1:5] & ALL$mol.bio %in% levels(ALL$mol.bio)[1:4])
  ALLb <- ALL[,tgt.cases]
- # ALLb$BT <- factor(ALLb$BT)
- # ALLb$mol.bio <- factor(ALLb$mol.bio)
+ ALLb$BT <- factor(ALLb$BT)
+ ALLb$mol.bio <- factor(ALLb$mol.bio)
  # save(ALLb, file = "myALL.Rdata")
  es <- exprs(ALLb)
  #class(es)
@@ -50,28 +50,79 @@ micro <- function() {
                   var.cutoff=IQR(as.vector(es))/5, 
                   feature.exclude="^AFFX")
  #print( ALLb) 
- ALLb <- ALLb$eset
- es1 <- exprs(ALLb)
- print( dim(es1) )
+  ALLb <- ALLb$eset
+  es <- exprs(ALLb)
+ # print( dim(es1) )
  
- f <- Anova(ALLb$mol.bio,p=0.01)
+ f <- Anova(ALLb$mol.bio, p=0.01)
  ff <- filterfun(f)
  selGenes <- genefilter(exprs(ALLb),ff)
  
- 
- sum(selGenes) 
+ print("sum sel of genes")
+ print (sum(selGenes)) 
  ALLb <- ALLb[selGenes,]
  #print( ALLb )
- es2 <- exprs(ALLb)
- print(dim(es2))
+ es <- exprs(ALLb)
+ #print(dim(es2))
+ 
+ #es3 <- exprs(ALLb)
+ plot(rowMedians(es),rowIQRs(es),
+      xlab='Median expression level',
+      ylab='IQR expression level',
+      main='Distribution Properties of the Selected Genes')
+ 
+ 
+ featureNames(ALLb) <- make.names(featureNames(ALLb))
+ es <- exprs(ALLb)
+ # print("dim es")
+ # print(dim(es))
+ 
+ # dt <- data.frame(es3)
+ # print( dim(t(dt)) )
+ Mut = ALLb$mol.bio
+ #print(Mut)
+ #head(dt)
+ 
+ library(randomForest)
+ dt <- data.frame( t(es), Mut = ALLb$mol.bio )
+ # load(file="./genedf.RData")
+ #save(dt, file = "genedf.Rdata")
+ #print(head(dt[1,]))
+  rf <- randomForest(Mut ~  ., dt, importance=T )
+ imp <- importance(rf)
+ imp <- imp[,ncol(imp)-1]
+ rf.genes <- names(imp)[order(imp,decreasing=T)[1:30]]
+ print(rf.genes)
 }
 rowIQRs <- function(em) 
   rowQ(em,ceiling(0.75*ncol(em))) - rowQ(em,floor(0.25*ncol(em)))
 
-  
-
-
-
-
 # library(genefilter)
 # detach_package("vegan", TRUE)
+
+rf <- function(){
+  load(file="./genedf.RData")
+  # rf <- randomForest(diagnosis ~ ., data = train.data, ntree = 300, mtry = 3, proximity=TRUE, cutoff = c(0.6,0.4) )
+  rf <- randomForest(Mut ~  ., dt, importance=T,ntree = 500 , mtry = 400)
+  predicted.train <- predict(rf, type="class")
+  train.actual <- dt[, ncol(dt)]
+  bias.estimate <- mean(predicted.train != train.actual)
+  print(paste('training Accuracy',1 - bias.estimate))
+  print(  table(predicted.train, train.actual)   )
+  
+}
+bayes <- function(){
+  load(file="./genedf.RData")
+  train.actual <- dt[, ncol(dt)]
+  df.train <- dt[,1:ncol(dt)-1]
+  print(dim(dt))
+  library(caret)
+  train_control <- trainControl(method="cv")
+  # train the model
+  model <- train(Mut ~., data = dt, trControl=train_control, method="nb")
+  predicted.train <- predict(model$finalModel,df.train)
+  bias.estimate <- mean(predicted.train != train.actual)
+  print(paste('training Accuracy',1 - bias.estimate))
+  #print(  table(predicted.train, train.actual)   )
+  
+}
