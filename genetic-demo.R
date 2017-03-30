@@ -10,13 +10,14 @@ library(class)
 demo <- function() {
   # cross = .9 muta = .25 elit = 3
   #gaControl("binary" = list(selection = "gabin_rwSelection"))
-  # GA <- ga(type = "binary", fitness = proj_glm, nBits = 6033, popSize = 50,maxiter = 50,
-  #        parallel = F, pcrossover = 0.8,pmutation = 0.1, selection = gabin_rwSelection )
   GA <- ga(type = "binary", fitness = knn3, nBits = 746, popSize = 100, maxiter = 70,
-           parallel = T, pcrossover = 0.5, pmutation = 0.1, elitism = 2,run = 100,
-           selection = ga_tourSelection, crossover = "gabin_spCrossover")
+           parallel = T, pcrossover = 0.5, pmutation = 0.2, elitism = 2,run = 70,
+           selection = ga_tourSelection, crossover = "gabin_uCrossover")
+  #ga_tourSelection(GA, k = 5)
+  
   plot(GA)
-  #print(summary(GA))
+  print(summary(GA))
+  print(GA)
   print(">>>>>>>>>>>>> GS@solution and dim")
   m1 <- GA@solution
   print(dim(m1))
@@ -105,3 +106,9 @@ unregister <- function() {
   env <- foreach:::.foreachGlobals
   rm(list=ls(name=env), pos=env)
 }
+
+# "binary"
+# – population = "gabin_Population"
+# – selection = "gabin_lrSelection"
+# – crossover = "gabin_spCrossover"
+# – mutation = "gabin_raMutation"
