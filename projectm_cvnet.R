@@ -254,6 +254,41 @@ rf_cancer <- function() {
   # print(rf)
   plot(margin(rf, test.actual))
 }
+bayes_proj <- function() {
+  df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  #head(df)
+  df <- df[c(-1)]
+  #df.class <- df[,1]
+  #df.train <- df[c(-1)]
+  #set.seed(299)
+  indices <- sample(2, nrow(df), replace = T, prob = c(0.7,0.3))
+  df.train0 <- df[indices == 1,]
+  df.train <- df.train0[c(-1)]
+  df.class <- df.train0[,1]
+  df.test0 <- df[indices == 2,]
+  df.test <- df.test0[c(-1)]
+  df.test.class <- df.test0[,1]
+  print(dim(df.train))
+  print(dim(df.test))
+  model = train(df.train,df.class,'nb',trControl=trainControl(method='cv',number=10))
+  predicted.values <- predict(model$finalModel, df.train)
+  table(predicted.values$class, df.class)
+  # naive_iris <- NaiveBayes(iris$Species ~ ., data = iris)
+  # plot(naive_iris)
+  result <- confusionMatrix(as.factor( predicted.values$class), as.factor(df.class) )
+  precision <- result$byClass['Pos Pred Value']    
+  recall <- result$byClass['Sensitivity']
+  print(precision)
+  print(recall)
+  # test data
+  predicted.test <- predict(model$finalModel, df.test)
+  print( table(predicted.test$class, df.test.class) )
+  result2 <- confusionMatrix(as.factor( predicted.test$class), as.factor(df.test.class))
+  precision <- result2$byClass['Pos Pred Value']    
+  recall <- result2$byClass['Sensitivity']
+  print(precision)
+  print(recall)
+}
 unregister <- function() {
   env <- foreach:::.foreachGlobals
   rm(list=ls(name=env), pos=env)
