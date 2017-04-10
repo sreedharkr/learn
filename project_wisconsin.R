@@ -1,9 +1,4 @@
-# projectm_cvnet.R glm, glm+pca, rpart, fcorr, varimp
-source("utility.R")
-library(glmnet)
-# 70:30 split and cv
-#radius_se  4.0912751, radius_worst  0.5657320, texture_worst   0.1211370, smoothness_worst  14.7915504,
-# concavity_worst   0.8301832, concave.points_worst   19.5613866, symmetry_worst            4.5592741
+library(caret)
 wlogistic <- function(){
   # regularization + cross-validation
   library(glmnet)
@@ -11,32 +6,37 @@ wlogistic <- function(){
   df <- df[ c(-1) ]
   set.seed(222)
   indices <- sample( 2, nrow(df), replace = T, prob = c(0.7, 0.3)  )
+  # train data
   df.train <- df[ indices == 1, ]  
-  df.train1 <- df.train[, 2:31]
-  #display.head(df.train1)
-  #display.pairs(df.train1)
+  df.train1 <- df.train[c(-1)]
   df.train.results <- df.train[,1]
-  
+  # test data
   df.test <- df[  indices == 2, ]
-  df.test1 <- df.test[, 2:31 ]
+  df.test1 <- df.test[c(-1)]
   df.test.results <- df.test[,1]
-  print( paste( c("number of rows in df.train"), nrow(df.train1) )  )
-  print( paste( c("number of rows in df.test"), nrow(df.test1) )  )
   
   # apply regularization and cv
-  cvglm <- cv.glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results), family = "binomial",alpha = 1)
+  cvglm <- cv.glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results), 
+                     family = "binomial",alpha = 1,
+                     nfolds = 10, type.measure = "class")
   #print(names(cvglm))
   #print( summary(cvglm) )
-  #plot(cvglm)
-  #print(coef(glm.wis3)[, 30])
+  plot(cvglm)
   #print(coef(cvglm))
   #0.01 accuracy 1
-  results.wis <- predict(object = cvglm, s = 0.01, as.matrix(df.test1),type = "response")
-  results.wis <- ifelse(results.wis >= 0.5,'M','B')
-  #print(results.wis)
-  results.wis <- as.factor(results.wis)
-  misClasificError <- mean(results.wis != df.test.results)
-  print(paste('Accuracy', 1 - misClasificError))
+  predicted <- predict(object = cvglm, s = 0.01, as.matrix(df.test1),type = "class")
+  #predicted <- ifelse(predicted >= 0.5,'M','B')
+  #print(predicted)
+  predicted <- as.factor(predicted)
+  cf <- confusionMatrix(predicted,df.test.results )
+  # names(cf) "positive" "table"    "overall"  "byClass"  "mode"     "dots" 
+  #print(names(cf$byClass))
+  print(cf$table)
+  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
+  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
+  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
+  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
+  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
 }
 
 wrandom <- function() {
@@ -61,9 +61,13 @@ wrandom <- function() {
   print(  table(predicted.train, train.actual)   )
   predicted.test = predict(rf,test.data[2:31], type="class")
   test.actual <- test.data[,1]
-  misClasificError <- mean(predicted.test != test.actual)
-  print(paste('Test data Accuracy',1 - misClasificError))
-  print(  table(predicted.test, test.actual)   )
+  cf <- confusionMatrix(predicted.test, test.actual)
+  print(cf$table)
+  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
+  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
+  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
+  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
+  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
   # print(rf)
   plot(margin(rf, test.actual))
 }
@@ -83,29 +87,27 @@ wbayes <- function() {
   df.test0 <- df[indices == 2,]
   df.test <- df.test0[c(-1)]
   df.test.class <- df.test0[,1]
-  print(dim(df.train))
-  print(dim(df.test))
+  
   model = train(df.train,df.class,'nb',trControl=trainControl(method='cv',number=10))
   predicted.values <- predict(model$finalModel, df.train)
   table(predicted.values$class, df.class)
   # naive_iris <- NaiveBayes(iris$Species ~ ., data = iris)
   # plot(naive_iris)
-  result <- confusionMatrix(as.factor( predicted.values$class), as.factor(df.class) )
-  precision <- result$byClass['Pos Pred Value']    
-  recall <- result$byClass['Sensitivity']
-  print(precision)
-  print(recall)
+  cf_train <- confusionMatrix(as.factor( predicted.values$class), as.factor(df.class) )
+  print(cf_train$table)
   # test data
   predicted.test <- predict(model$finalModel, df.test)
-  print( table(predicted.test$class, df.test.class) )
-  result2 <- confusionMatrix(as.factor( predicted.test$class), as.factor(df.test.class))
-  precision <- result2$byClass['Pos Pred Value']    
-  recall <- result2$byClass['Sensitivity']
-  print(precision)
-  print(recall)
+  cf <- confusionMatrix(as.factor( predicted.test$class), as.factor(df.test.class))
+  print(cf$table)
+  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
+  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
+  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
+  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
+  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
 }
 
 wadaboost <- function() {
+  library(ada)
   library("rpart")
   library("rpart.plot")
   library(randomForest)
@@ -120,12 +122,21 @@ wadaboost <- function() {
               test.y = train.data$diagnosis , 
               type = "gentle", control = control, iter = 70)
   gen1 <- addtest(gen1, train.data[,2:31], train.data$diagnosis)
-  summary(gen1)
+  #summary(gen1)
+  # print(names(gen1))
+  cf <- gen1$confusion
+  print(cf)
   gen2 <- ada(diagnosis ~ ., data = test.data, test.x = test.data[,2:31], 
               test.y = test.data$diagnosis , 
               type = "gentle", control = control, iter = 70)
   gen2 <- addtest(gen2, test.data[,2:31], test.data$diagnosis)
-  summary(gen2)
+   summary(gen2)
+  cf <- confusionMatrix(gen2$fit, gen2$actual)
+  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
+  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
+  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
+  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
+  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
   
 }
 

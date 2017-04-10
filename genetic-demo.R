@@ -1,8 +1,5 @@
 # genetic-ga.R
-bcancer <- read.csv("./../class/datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-#c1 <- c(2:6034)
 c1 <- c(1:746)
-
 library(GA)
 library(class)
 #gaControl("binary" = list(selection = "gabin_tourSelection"))
@@ -10,30 +7,26 @@ library(class)
 demo <- function() {
   # cross = .9 muta = .25 elit = 3
   #gaControl("binary" = list(selection = "gabin_rwSelection"))
-  GA <- ga(type = "binary", fitness = knn3, nBits = 746, popSize = 100, maxiter = 70,
-           parallel = T, pcrossover = 0.5, pmutation = 0.2, elitism = 2,run = 70,
-           selection = ga_tourSelection, crossover = "gabin_uCrossover")
+  GA <- ga(type = "binary", fitness = knn3, nBits = 746, popSize = 100, maxiter = 20,
+           parallel = T, pcrossover = 0.9, pmutation = 0.1, elitism = 2,run = 70,
+           selection = ga_tourSelection, crossover = "gabin_spCrossover", keepBest = T)
   #ga_tourSelection(GA, k = 5)
   
   plot(GA)
-  print(summary(GA))
+  #print(summary(GA))
   print(GA)
   print(">>>>>>>>>>>>> GS@solution and dim")
-  m1 <- GA@solution
-  print(dim(m1))
-  #print(GA@solution)
-  print("selected columns")
-  if(dim(m1)[1] > 1) {
-    cols <- m1[1,]
-  }
-  else
-    cols <- m1
+ 
+  gmat <- GA@solution
+  cols <- gmat[1,1:746]
+  #tt <- as.numeric(unlist(m1[1]))
   print(table(cols))
   print("selected columns number")
   b <- table(cols)
   print( b[names(b) == 1] )
   print("best fitness value >>>>>>>>>>>>>")
   print(GA@fitnessValue)
+  knn3(cols)
 }
 
 
@@ -41,9 +34,11 @@ knn3 <- function(x) {
    load(file="./genedf.RData")
    indices2 <- x * c1
    #print(indices2)
-   
-   indices <- sample(1:nrow(dt), size = nrow(dt))
-   df <- dt[indices,]
+   #set.seed(333)
+   # indices <- sample(1:nrow(dt), size = nrow(dt))
+   # df <- dt[indices,]
+   #ws_c_data <- df[, ncol(df) ]
+   df <- dt
    ws_c_data <- df[, ncol(df) ]
    num <- -ncol(dt)
    ws_train <- df[,num ]
@@ -64,6 +59,7 @@ knn4 <- function() {
   df <- dt[indices,]
   print(dim(df))
   ws_train <- df[,1:ncol(dt)-1]
+  #ws_train <- scale(ws_train, center = T, scale = T)
   ws_c_data <- df[, ncol(df) ]
   pred.results <- knn.cv(train = ws_train, cl = ws_c_data,k = 5, prob = FALSE, use.all = TRUE)
   print(pred.results)
