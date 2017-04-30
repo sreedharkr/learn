@@ -69,3 +69,39 @@ haboost <- function() {
   cf <- confusionMatrix(ha.boost.prediction, test.data$class)
   print(cf)
 }
+
+harandomf <- function() {
+  library("rpart")
+  library("rpart.plot")
+  library(randomForest)
+  library(caret)
+  ha <- read.csv("./../kaggle-non/wcomputing/dataset-har-PUC-Rio-ugulino.csv", header = T, sep = ";")
+  ha$how_tall_in_meters <- as.numeric(gsub(",", ".", gsub("\\.", "", ha$how_tall_in_meters)))
+  ha.select <- c("x1","y1","z1","x2","y2","z2","x3","y3","z3","x4","y4","z4","how_tall_in_meters","class")
+  ha2 <- ha[, ha.select]
+  ha2$z4 <- as.numeric(ha2$z4)
+  set.seed(299)
+  inTrain <- createDataPartition(ha2$class, p = 0.7, list = FALSE)
+  train.data <- ha2[inTrain,]
+  test.data <- ha2[-inTrain,]
+  
+  rf <- randomForest(class ~ ., data = train.data, ntree = 400, 
+                     mtry = 3,type = "class")
+  #plot(roc(rf$votes[,2],rf$y),main="chose a threshold from")
+  #print(attributes(rf))
+  plot(rf)
+  #print (importance(rf)) 
+  test.actual <- test.data[,ncol(test.data)]
+  #plot(margin(rf, test.actual))
+  predicted.test2 = predict( rf, test.data[, c(-ncol(test.data))], type="class")
+  #predicted.test <- predicted.test2[,2]
+  
+  actual_v <- as.numeric(test.actual)
+  cf <- confusionMatrix(predicted.test2,test.actual)
+  print(cf)
+}
+# mtry    OOBError
+# 2.OOB     2 0.005338784
+# 3.OOB     3 0.005269785
+# 5.OOB     5 0.005899400
+# 10.OOB   10 0.007977989
