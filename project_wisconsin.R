@@ -1,42 +1,51 @@
 library(caret)
 wlogistic <- function(){
-  # regularization + cross-validation
+  # regularization + cross-validation createDataPartition()
   library(glmnet)
+  library(ROSE)
+  #y = factor(y, levels=c(0,1), labels=c("No","Yes") 
+  #auth$class <- relevel(auth$class, ref = "YES") 
   df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  #barplot(table(df$diagnosis))
+  #
+  #df <- ovun.sample(diagnosis ~ ., data = df, method = "over", p = 0.5)$data
+  df$diagnosis <- relevel(df$diagnosis, ref = "B")
   df <- df[ c(-1) ]
-  set.seed(222)
+  set.seed(299)
   indices <- sample( 2, nrow(df), replace = T, prob = c(0.7, 0.3)  )
   # train data
   df.train <- df[ indices == 1, ]  
+  df.test <- df[  indices == 2, ]
+  
   df.train1 <- df.train[c(-1)]
   df.train.results <- df.train[,1]
   # test data
-  df.test <- df[  indices == 2, ]
   df.test1 <- df.test[c(-1)]
   df.test.results <- df.test[,1]
   
   # apply regularization and cv
+  grid=10^seq(10,-2,length=100)
   cvglm <- cv.glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results), 
                      family = "binomial",alpha = 1,
-                     nfolds = 10, type.measure = "class")
+                     nfolds = 10,standardize=FALSE)
   #print(names(cvglm))
-  #print( summary(cvglm) )
-  plot(cvglm)
-  #print(coef(cvglm))
-  #0.01 accuracy 1
-  predicted <- predict(object = cvglm, s = 0.01, as.matrix(df.test1),type = "class")
+  print( summary(cvglm) )
+  #plot(cvglm)
+  plot(cvglm$glmnet.fit,"norm", label = TRUE)
+  print(coef(cvglm))
+  # glm2 <- glmnet(x = as.matrix(df.train1), y = as.matrix(df.train.results), 
+  #                 family = "binomial",alpha = 1,
+  #                  lambda = cvglm$lambda.min)
+ 
+  predicted <- predict(object = cvglm, s = cvglm$lambda.min, as.matrix(df.test1),type = "class")
   #predicted <- ifelse(predicted >= 0.5,'M','B')
   #print(predicted)
   predicted <- as.factor(predicted)
-  cf <- confusionMatrix(predicted,df.test.results )
+  cf <- confusionMatrix(predicted,df.test.results,positive = 'M' )
   # names(cf) "positive" "table"    "overall"  "byClass"  "mode"     "dots" 
   #print(names(cf$byClass))
   print(cf$table)
-  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
-  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
-  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
-  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
-  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
+
 }
 
 wrandom <- function() {
@@ -44,6 +53,7 @@ wrandom <- function() {
   library("rpart.plot")
   library(randomForest)
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  print(table(bcancer$diagnosis))
   bcancer3 <- bcancer[c(-1)]
   set.seed(299)
   indices <- sample(2,nrow(bcancer3),replace = T,prob = c(70,30))
@@ -51,7 +61,7 @@ wrandom <- function() {
   test.data <- bcancer3[indices == 2,]
   rf <- randomForest(diagnosis ~ ., data = train.data, ntree = 300, 
                      mtry = 3, proximity=TRUE, cutoff = c(0.6,0.4) )
-  print(attributes(rf))
+  #print(attributes(rf))
   plot(rf)
   #print (importance(rf)) 
   predicted.train <- predict(rf, type="class")
@@ -74,20 +84,33 @@ wrandom <- function() {
 
 
 wbayes <- function() {
+  library(ROSE)
   df <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   #head(df)
   df <- df[c(-1)]
   #df.class <- df[,1]
   #df.train <- df[c(-1)]
-  #set.seed(299)
-  indices <- sample(2, nrow(df), replace = T, prob = c(0.7,0.3))
-  df.train0 <- df[indices == 1,]
+  set.seed(299)
+  
+  # df <- ovun.sample(diagnosis ~ ., data = df, method = "over",
+  #                         seed = 299, N = 714)$data
+  
+  cmatrix <- cor(df[,c(-1)])
+  indices <- findCorrelation(cmatrix,cutoff = 0.8,names = TRUE)
+  #df <- df[, -which(names(df) %in% indices   ) ]
+  
+  inTrain <- createDataPartition(df$diagnosis, p = 0.7, list = FALSE)
+  df.train0 <- df[inTrain,]
+  df.test0 <- df[-inTrain,]
+  
+  #indices <- sample(2, nrow(df), replace = T, prob = c(0.7,0.3))
+  #df.train0 <- df[indices == 1,]
   df.train <- df.train0[c(-1)]
   df.class <- df.train0[,1]
-  df.test0 <- df[indices == 2,]
+  #df.test0 <- df[indices == 2,]
   df.test <- df.test0[c(-1)]
   df.test.class <- df.test0[,1]
-  
+
   model = train(df.train,df.class,'nb',trControl=trainControl(method='cv',number=10))
   predicted.values <- predict(model$finalModel, df.train)
   table(predicted.values$class, df.class)
@@ -97,13 +120,8 @@ wbayes <- function() {
   print(cf_train$table)
   # test data
   predicted.test <- predict(model$finalModel, df.test)
-  cf <- confusionMatrix(as.factor( predicted.test$class), as.factor(df.test.class))
-  print(cf$table)
-  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
-  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
-  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
-  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
-  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
+  cf <- confusionMatrix(as.factor( predicted.test$class), as.factor(df.test.class),positive = "M")
+  print(cf)
 }
 
 wadaboost <- function() {
@@ -114,30 +132,31 @@ wadaboost <- function() {
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   bcancer3 <- bcancer[c(-1)]
   set.seed(299)
-  indices <- sample(2,nrow(bcancer3),replace = T,prob = c(70,30))
-  train.data <- bcancer3[indices == 1,]
-  test.data <- bcancer3[indices == 2,]
-  control <- rpart.control(cp = -1, maxdepth = 14,maxcompete = 1,xval = 0)
+  # indices <- sample(2,nrow(bcancer3),replace = T,prob = c(70,30))
+  # train.data <- bcancer3[indices == 1,]
+  # test.data <- bcancer3[indices == 2,]
+  inTrain <- createDataPartition(bcancer3$diagnosis, p = 0.7, list = FALSE)
+  train.data <- bcancer3[inTrain,]
+  test.data <- bcancer3[-inTrain,]
+  
+  Grid <- expand.grid(maxdepth=25,nu=2,iter=100)
+  control <- rpart.control(cp = 0.01, maxdepth = 9,xval = 10)
   gen1 <- ada(diagnosis ~ ., data = train.data, test.x = train.data[,2:31], 
-              test.y = train.data$diagnosis , 
-              type = "gentle", control = control, iter = 70)
-  gen1 <- addtest(gen1, train.data[,2:31], train.data$diagnosis)
+              test.y = train.data$diagnosis , nu = 0.1,
+              type = "real", control = control, iter = 200)
+  #gen1 <- addtest(gen1, train.data[,2:31], train.data$diagnosis)
   #summary(gen1)
   # print(names(gen1))
   cf <- gen1$confusion
+  #print(cf)
+  # gen2 <- ada(diagnosis ~ ., data = test.data, test.x = test.data[,2:31], 
+  #             test.y = test.data$diagnosis , 
+  #             type = "gentle", control = control, iter = 70)
+  # gen2 <- addtest(gen2, test.data[,2:31], test.data$diagnosis)
+  # summary(gen2)
+  predicted <- predict(gen1,test.data[,2:31] )
+  cf <- confusionMatrix(predicted, test.data$diagnosis)
   print(cf)
-  gen2 <- ada(diagnosis ~ ., data = test.data, test.x = test.data[,2:31], 
-              test.y = test.data$diagnosis , 
-              type = "gentle", control = control, iter = 70)
-  gen2 <- addtest(gen2, test.data[,2:31], test.data$diagnosis)
-   summary(gen2)
-  cf <- confusionMatrix(gen2$fit, gen2$actual)
-  print(paste("Accuracy",cf$overall['Accuracy'], sep = "::"))
-  print(paste("Precision",cf$byClass['Precision'], sep = "::"))
-  print(paste("Recall",cf$byClass['Recall'], sep = "::"))
-  print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
-  print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
-  
 }
 
 #PCA 
@@ -286,11 +305,13 @@ roc_curve <- function(){
   results.pred <- predict.glm(glm.wis3,bcancer3_test,type = "response")
   pred <- prediction(results.pred, bcancer3_test_results)
   # plot(performance(m1.scores, "tpr", "fpr"), col = "red")
-  perfspec <- performance(prediction.obj = pred, measure="spec", x.measure="cutoff")
+  #spec sens tpr fpr
+  perfspec <- performance(prediction.obj = pred, measure="tpr", x.measure="fpr")
   plot(perfspec)
+  abline(a=0, b= 1)
   par(new=TRUE)
-  perfsens <- performance(prediction.obj = pred, measure="sens", x.measure="cutoff")
-  plot(perfsens)
+   perfsens <- performance(prediction.obj = pred, measure="sens", x.measure="cutoff")
+   plot(perfsens)
 }
 k_means <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
@@ -317,14 +338,20 @@ k_means <- function(){
 dtree3 <- function() {
   library("rpart")
   library("rpart.plot")
+  library(caret)
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   bcancer3 <- bcancer[c(-1)]
-  bcancer.train <- scale(bcancer3[2:31], center = T, scale = T)
-  bcancer3.train <- data.frame(diagnosis = bcancer3[,1], bcancer.train)
-  # tree <- rpart(diagnosis ~ ., data = bcancer3, method = "class")
-  tree <- rpart(diagnosis ~ ., data = as.data.frame( bcancer3.train), method = "class")
+  inTrain <- createDataPartition(bcancer3$diagnosis,p = 0.7, list =FALSE)
+  # bcancer.train <- scale(bcancer3[2:31], center = T, scale = T)
+  # bcancer3.train <- data.frame(diagnosis = bcancer3[,1], bcancer.train)
+  bcancer.train <- bcancer3[inTrain,]
+  bcancer.test <- bcancer3[-inTrain,]
+  rpart.model <- rpart(diagnosis ~ ., data = as.data.frame( bcancer.train), method = "class")
   #summary(tree)
-  rpart.plot(tree)
+  rpart.plot(rpart.model)
+  predicted <- predict(rpart.model, bcancer.test[,c(-1)], type = "class")
+  cm <- confusionMatrix(predicted, bcancer.test[,1],positive = "M")
+  print(cm)
 }
 
 

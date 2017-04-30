@@ -1,15 +1,16 @@
 library(mlbench)
 library(caret)
 DataProfiling <- function(df = null) {
-  # performs the basic profiling of the data
-  #
-  #Args:
-  #   dataset: dataset for which the profiling is done
   n = 1;
   dataset <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
   dim(dataset)
   dataset <- dataset[c(-1)]
   set.seed(666)
+  
+  cmatrix <- cor(dataset[,c(-1,-2)])
+  indices <- findCorrelation(cmatrix,cutoff = 0.8,names = TRUE)
+  dataset <- dataset[, -which(names(dataset) %in% indices   ) ]
+  
   indices <- sample(2, nrow(dataset), replace=TRUE, prob = c(0.7,0.3) )
   train.data <- dataset[indices == 1,]
   print( paste( c("number of rows train.data",nrow(train.data))))
@@ -18,50 +19,52 @@ DataProfiling <- function(df = null) {
   test.data.class <- test.data[, n]
   test.data <- test.data[c(-1)]
   glm.model <- glm (diagnosis ~ ., family = binomial(link = "logit"), data = train.data, maxit = 100)
+  #glm.model
+  #stp <- step(glm.model,direction = "backwards")
+  #glm.model <- glm (formula = stp$formula, family = binomial(link = "logit"), data = train.data, maxit = 100)
   # displays the p-values
   #print( summary(glm.model)$coefficients[,4])
-  #print ( summary(glm.wis3)$coefficients[,4] < 0.05 )
-  data.coeff <- summary(glm.model)$coefficients[,4]
-  data.pval.logical <- (data.coeff < 0.05 )
-  count.pval <- length (data.pval.logical[data.pval.logical == FALSE])
-  print(paste(c("count of pcal",count.pval)))
-  if(count.pval > 0) {
-    print("Some variables are statistically insignificant")
-    print( names(train.data)[data.pval.logical == FALSE][c(-n)] )
-  }
+  # #print ( summary(glm.wis3)$coefficients[,4] < 0.05 )
+  # data.coeff <- summary(glm.model)$coefficients[,4]
+  # data.pval.logical <- (data.coeff < 0.05 )
+  # count.pval <- length (data.pval.logical[data.pval.logical == FALSE])
+  # print(paste(c("count of pcal",count.pval)))
+  # if(count.pval > 0) {
+  #   print("Some variables are statistically insignificant")
+  #   print( names(train.data)[data.pval.logical == FALSE][c(-n)] )
+  # }
   
-  #invisible(readline(prompt="Press [enter] to continue"))
-  cat ("Press [Y] for summary or N for no summary")
-  input <- readline()
-  if ( identical(input, "Y") ) {
-    print (summary(glm.model) )
-  }
-  cat ("Press [Y] for correlation matrix")
-  input <- readline()
-  if ( identical(input, "Y") ) {
-    cmatrix <- cor(train.data[c(-n)]) 
-    correlated <- findCorrelation(cmatrix, cutoff=0.7)
-    print( paste( cat("these variables have corelation > 0.7 ::::",correlated)  ) )
-  }
-  invisible(readline(prompt="Press [enter] to see number of rows and columns"))
-  no.rows <- nrow(dataset)
-  no.cols = ncol(dataset)
-  print( paste( c("number of rows",no.rows) ) )
-  print( paste( c("number of columns",no.cols)))
-  invisible(readline(prompt="Press [enter] to see names of columns"))
-   print( paste( c("names of columns",names(dataset))))
+  # #invisible(readline(prompt="Press [enter] to continue"))
+  # cat ("Press [Y] for summary or N for no summary")
+  # input <- readline()
+  # if ( identical(input, "Y") ) {
+  #   print (summary(glm.model) )
+  # }
+  # cat ("Press [Y] for correlation matrix")
+  # input <- readline()
+  # if ( identical(input, "Y") ) {
+  #   cmatrix <- cor(train.data[c(-n)]) 
+  #   correlated <- findCorrelation(cmatrix, cutoff=0.7)
+  #   print( paste( cat("these variables have corelation > 0.7 ::::",correlated)  ) )
+  # }
+  # invisible(readline(prompt="Press [enter] to see number of rows and columns"))
+  # no.rows <- nrow(dataset)
+  # no.cols = ncol(dataset)
+  # print( paste( c("number of rows",no.rows) ) )
+  # print( paste( c("number of columns",no.cols)))
+  # invisible(readline(prompt="Press [enter] to see names of columns"))
+  #  print( paste( c("names of columns",names(dataset))))
   predicted.results <- predict.glm(glm.model, test.data, type = "response")
   predicted.results <- ifelse (predicted.results >= 0.5, 'M', 'B')
   predicted.results <- as.factor(predicted.results)
   #print(predicted.results)
   #print(test.data.class) #
-  
-  misClasificError <- mean(predicted.results != test.data.class)
-  print(paste('Accuracy', 1 - misClasificError))
+  cf <- confusionMatrix(predicted.results, test.data.class)
+  print(cf)
 }
-n = 1;
-dataset <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
-DataProfiling()
+# n = 1;
+# dataset <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+# DataProfiling()
 #PCA 
 proj2 <- function(){
   bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")

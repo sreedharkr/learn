@@ -6,6 +6,7 @@ micro <- function() {
  library(Biobase)
  library(ALL)
  data(ALL)
+ dim(exprs(ALL))
  tgt.cases <- which(ALL$BT %in% levels(ALL$BT)[1:5] & ALL$mol.bio %in% levels(ALL$mol.bio)[1:4])
  ALLb <- ALL[,tgt.cases]
  ALLb$BT <- factor(ALLb$BT)
@@ -41,16 +42,19 @@ micro <- function() {
                   feature.exclude="^AFFX")
   ALLb <- ALLb$eset
   es <- exprs(ALLb)
+  print("dim after nsFilter")
+  print(dim(es))
  #Anova filtering data
  f <- Anova(ALLb$mol.bio, p=0.01)
  ff <- filterfun(f)
  selGenes <- genefilter(exprs(ALLb),ff)
- 
  print("sum sel of genes")
- print (sum(selGenes)) 
+ print (sum(selGenes))
+ 
  ALLb <- ALLb[selGenes,]
  es <- exprs(ALLb)
- 
+ print("dim after Anova")
+ print(dim(es))
  plot(rowMedians(es),rowIQRs(es),
       xlab='Median expression level',
       ylab='IQR expression level',
@@ -80,15 +84,46 @@ rowIQRs <- function(em)
 # detach_package("vegan", TRUE)
 
 rf <- function(){
+  library(caret)
   load(file="./genedf.RData")
+  print(table(dt$Mut))
+  # prop.table(table(dt$Mut))
   # rf <- randomForest(diagnosis ~ ., data = train.data, ntree = 300, mtry = 3, proximity=TRUE, cutoff = c(0.6,0.4) )
-  rf <- randomForest(Mut ~  ., dt, importance=T,ntree = 500 , mtry = 400)
+  v1 <- as.vector(prop.table(table(dt$Mut)))
+  rf <- randomForest(Mut ~  ., dt, importance=T,ntree = 500 , mtry = 45,cutoff = v1)
+                     
   predicted.train <- predict(rf, type="class")
   train.actual <- dt[, ncol(dt)]
-  bias.estimate <- mean(predicted.train != train.actual)
-  print(paste('training Accuracy',1 - bias.estimate))
-  print(  table(predicted.train, train.actual)   )
+  cm <- confusionMatrix(predicted.train, train.actual)
+  print(cm$table)
   
+}
+rf2 <- function(){
+  library(caret)
+  library(mlbench)
+  library(mlr)
+  load(file="./genedf.RData")
+  print(table(dt$Mut))
+  inTrain <- createDataPartition(dt$Mut, p = 0.7, list = FALSE)
+  df = dt
+  df.train <- df[inTrain,]
+  df.test <- df[-inTrain,]
+  df.test1 <- df.test[c(-ncol(df.test))]
+  df.test.results <- df.test[,ncol(df.test)]
+  #classif.randomForest
+ 
+  gn.task = makeClassifTask(id = "genes", data = df.train, target = "Mut")
+  costs = matrix(c(0, 5, 10, 30, 0, 8, 80, 4, 0), 3)
+  wf.costs = makeCostMeasure(id = "gene.costs", name = "test.costs", costs = costs,
+                             best = 0, worst = 10)
+  #getParamSet("classif.randomForest")
+  rf.lrn = makeLearner("classif.randomForest", predict.type = "response")
+  #classif.lrn = setPredictType(rf.lrn, "response")
+  mod = train(rf.lrn, gn.task)
+  pred = predict(mod, newdata = df.test1)
+  cm <- confusionMatrix(pred$data$response,df.test.results)
+  print(table(df.test.results))
+  print(cm$table)
 }
 bayes <- function(){
   load(file="./genedf.RData")

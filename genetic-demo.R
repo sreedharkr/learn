@@ -1,22 +1,24 @@
 # genetic-ga.R
 c1 <- c(1:746)
 library(GA)
+library(caret)
 library(class)
-#gaControl("binary" = list(selection = "gabin_tourSelection"))
-#gaControl("binary" = list(selection = "ga_rwSelection",crossover = "gabin_uCrossover"))
+
+# gabin_tourSelection, ga_rwSelection, 
+# gabin_uCrossover, gabin_spCrossover
 demo <- function() {
-  # cross = .9 muta = .25 elit = 3
-  #gaControl("binary" = list(selection = "gabin_rwSelection"))
-  GA <- ga(type = "binary", fitness = knn3, nBits = 746, popSize = 100, maxiter = 20,
-           parallel = T, pcrossover = 0.9, pmutation = 0.1, elitism = 2,run = 70,
-           selection = ga_tourSelection, crossover = "gabin_spCrossover", keepBest = T)
-  #ga_tourSelection(GA, k = 5)
+ 
+  # GA <- ga(type = "binary", fitness = knnga, nBits = 746, popSize = 100, maxiter = 10,
+  #          parallel = T, pcrossover = 0.90, pmutation = 0.008, elitism = 2,run = 200,
+  #          selection = ga_rwSelection, crossover = "gabin_uCrossover", keepBest = F)
   
+  GA <- ga(type = "binary", fitness = knnga, nBits = 746, popSize = 10, maxiter = 10,
+           parallel = F, pcrossover = 0.9, pmutation = 0.1, elitism = 2,run = 100,
+           selection = gabin_tourSelection)
   plot(GA)
   #print(summary(GA))
   print(GA)
   print(">>>>>>>>>>>>> GS@solution and dim")
- 
   gmat <- GA@solution
   cols <- gmat[1,1:746]
   #tt <- as.numeric(unlist(m1[1]))
@@ -26,30 +28,41 @@ demo <- function() {
   print( b[names(b) == 1] )
   print("best fitness value >>>>>>>>>>>>>")
   print(GA@fitnessValue)
-  knn3(cols)
+  knn5(cols)
 }
 
 
-knn3 <- function(x) {
-   load(file="./genedf.RData")
-   indices2 <- x * c1
-   #print(indices2)
-   #set.seed(333)
-   # indices <- sample(1:nrow(dt), size = nrow(dt))
-   # df <- dt[indices,]
-   #ws_c_data <- df[, ncol(df) ]
-   df <- dt
-   ws_c_data <- df[, ncol(df) ]
-   num <- -ncol(dt)
-   ws_train <- df[,num ]
-   ws_train <- ws_train[,indices2]
-  
-   pred.results <- knn.cv(train = ws_train, cl = ws_c_data,k = 5, prob = FALSE, use.all = TRUE)
+knnga <- function(x) {
+  # print("entered")
+    load(file="./genedf.RData")
+    indices2 <- x * c1
+    df <- dt
+    ws_c_data <- df[, ncol(df) ]
+    num <- -ncol(dt)
+    ws_train <- df[,num ]
+    ws_train <- ws_train[,indices2]
+    pred.results <- knn.cv(train = ws_train, cl = ws_c_data,k = 5, prob = FALSE, use.all = TRUE)
+    #pred.results <- knn(train = ws_train, cl = ws_c_data,test = ws_train,k = 5, prob = FALSE, use.all = TRUE)
+    cm <- confusionMatrix(pred.results, ws_c_data)
+    f1 <- cm$byClass[4,11]
+  # print(f1)
+   return(f1)
+}
+knn5 <- function(x) {
+  load(file="./genedf.RData")
+  indices2 <- x * c1
+  df <- dt
+  print(table(df$Mut))
+  ws_c_data <- df[, ncol(df) ]
+  num <- -ncol(dt)
+  ws_train <- df[,num ]
+  ws_train <- ws_train[,indices2]
+  pred.results <- knn(train = ws_train, cl = ws_c_data,test = ws_train,k = 5, prob = FALSE, use.all = TRUE)
+  #pred.results <- knn.cv(train = ws_train, cl = ws_c_data,k = 5, prob = FALSE, use.all = TRUE)
   # print(pred.results)
-   mn <- mean(pred.results == ws_c_data)
-   print(mn)
-  # #print ( table(pred.results, ws_c_data) )
-  return(mn)
+  library(caret)
+  cf <- confusionMatrix(pred.results,ws_c_data)
+  print(cf)
 }
 # 87 accuracy
 knn4 <- function() {
@@ -92,9 +105,8 @@ rf_cancer <- function() {
   #plot(rf)
   #print (importance(rf)) 
   predicted.train <- predict(rf, type="class")
-  bias.estimate <- mean(predicted.train != ws_c_data)
-  print(paste('training Accuracy',1 - bias.estimate))
-  print(  table(predicted.train, ws_c_data)   )
+  cm <- confusionMatrix(predicted.train,ws_c_data)
+  cm$byClass
   plot(margin(rf, test.actual))
 }
 
