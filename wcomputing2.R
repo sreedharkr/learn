@@ -77,7 +77,8 @@ harandomf <- function() {
   library(caret)
   ha <- read.csv("./../kaggle-non/wcomputing/dataset-har-PUC-Rio-ugulino.csv", header = T, sep = ";")
   ha$how_tall_in_meters <- as.numeric(gsub(",", ".", gsub("\\.", "", ha$how_tall_in_meters)))
-  ha.select <- c("x1","y1","z1","x2","y2","z2","x3","y3","z3","x4","y4","z4","how_tall_in_meters","class")
+  ha.select <- c("x1","y1","z1","x2","y2","z2","x3","y3","z3","x4","y4","z4",
+                 "how_tall_in_meters","weight","class")
   ha2 <- ha[, ha.select]
   ha2$z4 <- as.numeric(ha2$z4)
   set.seed(299)
@@ -105,3 +106,21 @@ harandomf <- function() {
 # 3.OOB     3 0.005269785
 # 5.OOB     5 0.005899400
 # 10.OOB   10 0.007977989
+
+knnha <- function(){
+  ha <- read.csv("./../kaggle-non/wcomputing/dataset-har-PUC-Rio-ugulino.csv", header = T, sep = ";")
+  ha$z4 <- as.numeric(ha$z4) 
+  fcol <- c("user","gender","age","how_tall_in_meters","weight","body_mass_index")
+  indices <- - which(names(ha) %in% fcol)
+  ha <- ha[, indices]
+}
+
+effects <- function(){
+  ha <- read.csv("./../kaggle-non/wcomputing/dataset-har-PUC-Rio-ugulino.csv", header = T, sep = ";")
+  with(ha,interaction.plot(x1,y1,class))
+  
+}
+unregister <- function() {
+  env <- foreach:::.foreachGlobals
+  rm(list=ls(name=env), pos=env)
+}
