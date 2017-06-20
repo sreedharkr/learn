@@ -1,0 +1,15 @@
+Filter, Map, list(), pairlist(), append()
+
+rep()#all options
+
+varMetadata(ALL@phenoData)
+
+#
+sapply( levels(iris$Species), function(str) { summary( as.vector (t ( iris2[iris$Species == str,] )) ) })
+by(iris[,1:4], INDICES = list(iris$Species), FUN = function2)
+#
+
+process:
+
+summary of the entire numeric values 
+summary of the numeric values grouped by class
