@@ -13,3 +13,10 @@ process:
 
 summary of the entire numeric values 
 summary of the numeric values grouped by class
+
+IQR for fature selection
+
+filtered_list <- nsFilter(ALLb, var.cutoff = 0.5)
+filtered_list <- nsFilter(ALLb, var.cutoff = 0.5, var.filter = T, varFilter = F)
+es_var50  <- exprs(filtered_list$eset)
+dim(es_var50)
