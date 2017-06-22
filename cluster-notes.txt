@@ -1,0 +1,8 @@
+In supervised learning, it is easy to define what relevant feature means. It simply refers to the feature that is capable of distinguishing different classes. For example, a feature fi is said to be relevant to a class cj if fi and cj are highly correlated.
+
+why clustering> -- manual labelling is expensive.- image segmentation, information retrieval, pattern recognition, pattern classification, network analysis etc.
+
+It can be seen as either an exploratory task or preprocessing step. If the
+goal is to explore and reveal the hidden patterns in the data, clustering becomes a standalone exploratory task by itself. However, if the generated clusters are going to be used to facilitate another data mining or machine learning task, clustering will be a preprocessing step in this case.
+
+why feature selection in clustering? How diff is it from supervised learning.How do you prove FSelection improves clustering accuracy.
