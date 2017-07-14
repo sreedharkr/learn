@@ -52,7 +52,10 @@ wrandom <- function() {
   library("rpart")
   library("rpart.plot")
   library(randomForest)
-  bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  #bcancer <- read.csv("datasets/breast-cancer-wisconsin-data.csv",sep = ",")
+  bcancer <- read.csv("wdbc.csv")
+  bcancer <- bcancer[, 1:31]
+  bcancer3 <- bcancer
   print(table(bcancer$diagnosis))
   bcancer3 <- bcancer[c(-1)]
   set.seed(299)
@@ -69,7 +72,7 @@ wrandom <- function() {
   bias.estimate <- mean(predicted.train != train.actual)
   print(paste('training Accuracy',1 - bias.estimate))
   print(  table(predicted.train, train.actual)   )
-  predicted.test = predict(rf,test.data[2:31], type="class")
+  predicted.test = predict(rf,test.data[,2:30], type="class")
   test.actual <- test.data[,1]
   cf <- confusionMatrix(predicted.test, test.actual)
   print(cf$table)
@@ -79,7 +82,7 @@ wrandom <- function() {
   print(paste("Sensitivity",cf$byClass['Sensitivity'], sep = "::"))
   print(paste("Specificity",cf$byClass['Specificity'], sep = "::"))
   # print(rf)
-  plot(margin(rf, test.actual))
+  #plot(margin(rf, test.actual))
 }
 
 

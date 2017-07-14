@@ -1,8 +1,38 @@
+techniques vary based on domain
+gene expresion analysis - correlation based distance
+filter vs wrapped
+                  diff between supervised & unsupervised:
 In supervised learning, it is easy to define what relevant feature means. It simply refers to the feature that is capable of distinguishing different classes. For example, a feature fi is said to be relevant to a class cj if fi and cj are highly correlated.
-
+                        
+                        why??
+                        
 why clustering> -- manual labelling is expensive.- image segmentation, information retrieval, pattern recognition, pattern classification, network analysis etc.
 
+                            purpose
 It can be seen as either an exploratory task or preprocessing step. If the
 goal is to explore and reveal the hidden patterns in the data, clustering becomes a standalone exploratory task by itself. However, if the generated clusters are going to be used to facilitate another data mining or machine learning task, clustering will be a preprocessing step in this case.
-
+                          why fselection
 why feature selection in clustering? How diff is it from supervised learning.How do you prove FSelection improves clustering accuracy.
+
+                         pattern detection
+Different subset of relevant features show diff clustering(patterns) thus helps to discover hidden patterns.                 
+                            filter vs wrapper vs hybrid
+Similar to feature selection for supervised learning, methods of feature selection for
+clustering are categorized into filter [15] wrapper [55], and hybrid models [19]. A wrapper
+model evaluates the candidate feature subsets by the quality of clustering while filter model
+is independent of clustering algorithm. Thus, the filter model is still preferable in terms of
+computational time and unbiased toward any clustering method, while the wrapper model
+produces better clustering if we know the clustering method in advance. To alleviate the
+computational cost in the wrapper model, filtering criteria are utilized to select the candidate feature subsets in the hybrid model.
+                                filter
+examples of filter model criteria used in feature selection for clustering
+include: feature dependency [62], entropy-based distance [15], and laplacian score [26, 80].
+                                wrapper
+Different wrapper feature selection methods for clustering
+were proposed by changing the combination of search strategy and the utilized clustering
+algorithm. The method proposed in [18] is an example of a wrapper that involves maximum
+likelihood criteria and feature selection and mixture of Gaussians as clustering method.
+Others use conventional clustering methods such as k-means and any search strategy as
+feature selector [32].                                
+
+                            

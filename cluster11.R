@@ -60,11 +60,8 @@ iris_pca <- function() {
   ggplot(df, aes(x = PC1, y = PC2, color = Species)) + geom_point()
   ggplot(iris, aes(x = iris$Sepal.Length, y = iris$Sepal.Width, color = Species)) + geom_point()
   ggplot(iris, aes(x = iris$Petal.Length, y = iris$Petal.Width, color = Species)) + geom_point()
-
-  
-  
 }
-#############
+
 iris_reorder <- function(x){
   #print('hello')
   if (x == 'setosa') { return(2)}
@@ -87,3 +84,5 @@ clusters2 <- apply(iris.test[, 1:4], 1, closest.cluster)
 t4 <- sapply(iris.test[, 5], FUN = iris_reorder)
 cm2 <- confusionMatrix(data = clusters2, reference = t4)
 cm2$table
+#correlation based distance matrix
+factoextra::get_dist(USArrests, "pearson")

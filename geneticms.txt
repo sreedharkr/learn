@@ -20,3 +20,16 @@ filtered_list <- nsFilter(ALLb, var.cutoff = 0.5)
 filtered_list <- nsFilter(ALLb, var.cutoff = 0.5, var.filter = T, varFilter = F)
 es_var50  <- exprs(filtered_list$eset)
 dim(es_var50)
+
+
+iqr1 <- apply(X = es, MARGIN = 1, FUN = IQR)
+iqr_logical <- (iqr1 < IQR(as.vector(es))/5)
+es77 <- es[iqr_logical,]
+            or
+
+iqr1 <- apply(X = t(es), MARGIN = 2, FUN = IQR)
+iqr_logical <- (iqr1 < IQR(as.vector(es))/5)
+es78 <- t(es)[, iqr_logical]
+
+#last columns of dataset
+dt[1:5, tail(seq_len(ncol(dt)), 3)]
